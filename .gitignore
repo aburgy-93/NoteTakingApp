@@ -2,6 +2,8 @@
 bin/
 obj/
 
+Migrations/
+
 # ASP.NET CORE
 appsettings.json
 appsettings.Development.json

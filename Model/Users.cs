@@ -14,7 +14,7 @@ public class User
     public string Username { get; set; }
 
     [JsonIgnore]
-    public string Password { get; set; } = string.Empty;  // Initialize to an empty string
+    public string PasswordHash { get; set; } = string.Empty;
 
     [Required]
     public DateTime CreationTimestamp { get; set; } = DateTime.UtcNow;

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Backend.Db;
+using Backend.Services;
+using NuGet.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +22,8 @@ builder.Services.AddDbContext<NoteDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 42)))
 );
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TokenService>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

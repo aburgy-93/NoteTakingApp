@@ -79,7 +79,7 @@ namespace Backend.Migrations
                     b.Property<DateTime?>("LastLoginTimestamp")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Password")
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("longtext");
 
