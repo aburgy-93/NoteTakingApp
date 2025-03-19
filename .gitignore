@@ -1,0 +1,7 @@
+# .NET Core
+bin/
+obj/
+
+# ASP.NET CORE
+appsettings.json
+appsettings.Development.json
