@@ -8,11 +8,13 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Db;
 using Backend.Model;
 using Backend.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProjectController : ControllerBase
     {
         private readonly NoteDbContext _context;

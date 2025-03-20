@@ -18,4 +18,6 @@ public class Note {
 
     // Foreign Key for Project (Nullable, since notes may not belong to a project)
     public int? ProjectId {get; set;}
+
+    public List<NoteAttribute> Attributes { get; set; } = new();
 }

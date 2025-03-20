@@ -11,6 +11,8 @@ namespace Backend.Db
         public DbSet<Note> Notes { get; set; } = null!;
         public DbSet<User> Users {get; set;} = null!;
 
+        public DbSet<NoteAttribute> Attributes {get; set;} = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -20,6 +22,11 @@ namespace Backend.Db
                 .WithMany(project => project.Notes)
                 .HasForeignKey(note => note.ProjectId)
                 .OnDelete(DeleteBehavior.SetNull);  // Ensures notes can exist without a project
+
+            modelBuilder.Entity<Note>()
+                .HasMany(notes => notes.Attributes)
+                .WithMany()
+                .UsingEntity(j => j.ToTable("NoteAttributeMapping"));
 
             modelBuilder.Entity<User>()
                 .HasIndex(user => user.Username)

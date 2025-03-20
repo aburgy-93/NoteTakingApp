@@ -47,6 +47,23 @@ namespace Backend.Migrations
                     b.ToTable("Notes");
                 });
 
+            modelBuilder.Entity("Backend.Model.NoteAttribute", b =>
+                {
+                    b.Property<int>("AttributeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("AttributeId"));
+
+                    b.Property<string>("AttributeName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("AttributeId");
+
+                    b.ToTable("Attributes");
+                });
+
             modelBuilder.Entity("Backend.Model.Project", b =>
                 {
                     b.Property<int>("ProjectId")
@@ -96,12 +113,42 @@ namespace Backend.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("NoteNoteAttribute", b =>
+                {
+                    b.Property<int>("AttributesAttributeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NoteId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AttributesAttributeId", "NoteId");
+
+                    b.HasIndex("NoteId");
+
+                    b.ToTable("NoteAttributeMapping", (string)null);
+                });
+
             modelBuilder.Entity("Backend.Model.Note", b =>
                 {
                     b.HasOne("Backend.Model.Project", null)
                         .WithMany("Notes")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("NoteNoteAttribute", b =>
+                {
+                    b.HasOne("Backend.Model.NoteAttribute", null)
+                        .WithMany()
+                        .HasForeignKey("AttributesAttributeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Model.Note", null)
+                        .WithMany()
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Backend.Model.Project", b =>

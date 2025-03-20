@@ -8,11 +8,15 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Db;
 using Backend.Model;
 using Backend.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class NoteController : ControllerBase
     {
         private readonly NoteDbContext _context;
@@ -26,13 +30,28 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Note>>> GetNotes()
         {
-            return await _context.Notes.ToListAsync();
+            // Get the current user's UserId from the claims in the JWT token
+           var userIdClaim = User.Claims.FirstOrDefault(claim => claim.Type == "userId");
+         
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User not found in token.");
+            }
+
+            // Retrieve the notes 
+             var notes = await _context.Notes
+                .Include(note => note.Attributes)
+                .ToListAsync();
+            return Ok(notes);
         }
 
         // GET: api/Note/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Note>> GetNote(int id) {
-            var note = await _context.Notes.FindAsync(id);
+            var note = await _context.Notes
+                .Include(n => n.Attributes)
+                .FirstOrDefaultAsync(n => n.NoteId == id);
+
 
             if (note == null) {
                 return NotFound();
@@ -46,15 +65,27 @@ namespace Backend.Controllers
         public async Task<IActionResult> PutNote(int id, NoteUpdateDto noteUpdateDto)
         {
             // Find the note by the provided id
-            var note = await _context.Notes.FindAsync(id);
+            var note = await _context.Notes
+                .Include(note => note.Attributes)
+                .FirstOrDefaultAsync(note => note.NoteId == id);
+
             if (note == null)
             {
                 // Return 404 if note is not found
                 return NotFound();  
             }
 
+            var attributes = noteUpdateDto.AttributeIds.Any()
+                ? await _context.Attributes
+                    .Where(a => noteUpdateDto.AttributeIds.Contains(a.AttributeId))
+                    .ToListAsync()
+                : new List<NoteAttribute>(); // If empty, clear attributes
+
             // Update the note properties with the data from the DTO
             note.NoteText = noteUpdateDto.NoteText;
+
+            // Assign new attributes
+            note.Attributes = attributes;
 
             // Mark the entity as modified and save changes to the database
             _context.Entry(note).State = EntityState.Modified;
@@ -90,11 +121,18 @@ namespace Backend.Controllers
                 return BadRequest("Note text is required.");
             }
 
+            var attributes = noteDto.AttributeIds.Any()
+                ? await _context.Attributes
+                    .Where(a => noteDto.AttributeIds.Contains(a.AttributeId))
+                    .ToListAsync()
+                : new List<NoteAttribute>(); // If empty, return an empty list
+
             var note = new Note
             {
                 NoteText = noteDto.NoteText,
                 // Use the projectId from query parameter if provided, otherwise it will be null
-                ProjectId = projectId
+                ProjectId = projectId,
+                Attributes = attributes
             };
 
             _context.Notes.Add(note);
