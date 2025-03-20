@@ -35,6 +35,27 @@ namespace Backend.Controllers
             return projects;
         }
 
+        [HttpGet("ProjectNoteCounts")]
+        public async Task<ActionResult<IEnumerable<ProjectNoteCountDto>>> GetProjectNoteCount()
+        {
+            // Group notes by ProjectId and count them
+            var projectNoteCount = await _context.Notes.GroupBy(note => note.ProjectId).Select(group => new 
+            {
+                ProjectId = group.Key,
+                Count = group.Count()
+            })
+            .ToListAsync();
+
+            // Convert to DTO format
+            var result = projectNoteCount.Select(projDto => new ProjectNoteCountDto
+            {
+                ProjectId = projDto.ProjectId,
+                Count = projDto.Count
+            }).ToList();
+
+            return Ok(result);
+        }
+
         // GET: api/Project/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Project>> GetProject(int id)
