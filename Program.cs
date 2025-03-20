@@ -6,10 +6,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    WebRootPath = "wwwroot", // Ensures wwwroot is used for serving Angular
+    ApplicationName = typeof(Program).Assembly.FullName,
+    ContentRootPath = AppContext.BaseDirectory
+});
 
 var mysqlPassword = Environment.GetEnvironmentVariable("MYSQL_PASSWORD");
-
 var connectionString = builder.Configuration.GetConnectionString("MySQLConnection").Replace("%MYSQL_PASSWORD%", mysqlPassword);
 
 var jwtkey = builder.Configuration["JwtSettings:SecretKey"];
@@ -66,11 +71,25 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TokenService>();
 
+builder.Logging.AddConsole();
+
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")  // Allow your Angular app to make requests
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure middleware
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
@@ -78,11 +97,34 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Request: {context.Request.Path}");
+    await next();
+});
+
 app.UseHttpsRedirection();
 
-app.UseAuthentication();  // This is important for enabling JWT authentication
+// Use the CORS policy before other middleware
+app.UseCors("AllowAngularApp");
+
+// Serve default files (like index.html)
+app.UseDefaultFiles();  // Automatically serve index.html if the request matches
+// Serve static files (JS, CSS, images, etc.)
+app.UseStaticFiles();  // Serve Angular static files from wwwroot
+
+// Routing for API controllers
+app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+// Map your API controllers
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+
+// Ensure Angular handles routing for SPA (Single Page Application)
+app.MapFallbackToFile("index.html");  // Handle any unknown routes by serving index.html
 
 app.Run();

@@ -28,20 +28,38 @@ namespace Backend.Controllers
 
         // GET: api/Note
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Note>>> GetNotes()
+        public async Task<ActionResult<IEnumerable<Note>>> GetNotes(
+        [FromQuery] int? projectId = null,  // Optional project filter
+        [FromQuery] int[] attributeIds = null // Optional attribute filter
+        )
         {
             // Get the current user's UserId from the claims in the JWT token
-           var userIdClaim = User.Claims.FirstOrDefault(claim => claim.Type == "userId");
-         
+            var userIdClaim = User.Claims.FirstOrDefault(claim => claim.Type == "userId");
+
             if (userIdClaim == null)
             {
                 return Unauthorized("User not found in token.");
             }
 
-            // Retrieve the notes 
-             var notes = await _context.Notes
-                .Include(note => note.Attributes)
-                .ToListAsync();
+            // Start with the query to get notes
+            var query = _context.Notes
+                .Include(note => note.Attributes) // Include attributes for filtering
+                .AsQueryable();
+
+            // Apply projectId filter if specified
+            if (projectId.HasValue)
+            {
+                query = query.Where(n => n.ProjectId == projectId);
+            }
+
+            // Apply attributeId filter if specified
+            if (attributeIds != null && attributeIds.Any())
+            {
+                query = query.Where(n => n.Attributes.Any(a => attributeIds.Contains(a.AttributeId)));
+            }
+
+            // Execute the query
+            var notes = await query.ToListAsync();
             return Ok(notes);
         }
 
