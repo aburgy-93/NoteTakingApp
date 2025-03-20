@@ -63,6 +63,43 @@ namespace Backend.Controllers
             return Ok(notes);
         }
 
+       [HttpGet("AttributeNoteCounts")]
+        public async Task<ActionResult<IEnumerable<AttributeNoteCountDTO>>> GetAttributeCounts()
+            {
+                // Flatten the relationship between Notes and Attributes
+                var attributeNoteCounts = await _context.Notes
+                    .SelectMany(note => note.Attributes.Select(attr => new { attr.AttributeId, note.NoteId }))
+                    .GroupBy(x => x.AttributeId)
+                    .Select(group => new 
+                    {
+                        AttributeId = group.Key,
+                        Count = group.Count()
+                    })
+                    .ToListAsync();
+
+                // Get the count of notes without any attributes
+                var notesWithoutAttributesCount = await _context.Notes
+                    .Where(note => !note.Attributes.Any())
+                    .CountAsync();
+
+                // Convert the results to DTO format
+                var results = attributeNoteCounts
+                    .Select(attr => new AttributeNoteCountDTO
+                    {
+                        AttributeIds = new int[] { attr.AttributeId },
+                        Count = attr.Count
+                    })
+                    .ToList();
+
+                results.Add(new AttributeNoteCountDTO
+                {
+                    AttributeIds = new int[] { },
+                    Count = notesWithoutAttributesCount
+                });
+
+                return Ok(results);
+            }
+
         // GET: api/Note/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Note>> GetNote(int id) {
