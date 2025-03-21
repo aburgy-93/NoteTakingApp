@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+// Specifying where to find static files when using Angular.
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
     Args = args,
@@ -14,12 +15,17 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = AppContext.BaseDirectory
 });
 
+// Getting password and connection data from EV
 var mysqlPassword = Environment.GetEnvironmentVariable("MYSQL_PASSWORD");
 var connectionString = builder.Configuration.GetConnectionString("MySQLConnection").Replace("%MYSQL_PASSWORD%", mysqlPassword);
 
+// Creating the JWT token
 var jwtkey = builder.Configuration["JwtSettings:SecretKey"];
 var key = Encoding.ASCII.GetBytes(jwtkey);
 
+/*
+    Adding authentication to test login functionality
+*/
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -37,6 +43,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+/*
+    This allows me to mock logging in to the app by registering a token after
+    fake user logsin. 
+*/
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -63,15 +73,20 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+/*
+    Add DB context to builder.
+    Scoped lifetime, new instance created per HTTP request
+    The same instance is shared across services within that request
+    DbContext is disposed after request is completed
+*/
 builder.Services.AddDbContext<NoteDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 42)))
 );
 
+// Add Controllers and other services to Builder
 builder.Services.AddControllers();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TokenService>();
-
-builder.Logging.AddConsole();
 
 // Add CORS services
 builder.Services.AddCors(options =>
@@ -97,34 +112,32 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.Use(async (context, next) =>
-{
-    Console.WriteLine($"Request: {context.Request.Path}");
-    await next();
-});
-
 app.UseHttpsRedirection();
 
 // Use the CORS policy before other middleware
 app.UseCors("AllowAngularApp");
 
 // Serve default files (like index.html)
-app.UseDefaultFiles();  // Automatically serve index.html if the request matches
+// Automatically serve index.html if the request matches
+app.UseDefaultFiles();  
+// Serve Angular static files from wwwroot
 // Serve static files (JS, CSS, images, etc.)
-app.UseStaticFiles();  // Serve Angular static files from wwwroot
+app.UseStaticFiles();  
 
 // Routing for API controllers
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map your API controllers
+// Map API controllers
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
 });
 
 // Ensure Angular handles routing for SPA (Single Page Application)
-app.MapFallbackToFile("index.html");  // Handle any unknown routes by serving index.html
+// Handle any unknown routes by serving index.html
+app.MapFallbackToFile("index.html");  
 
+// Run the app.
 app.Run();

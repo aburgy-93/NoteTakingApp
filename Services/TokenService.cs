@@ -20,10 +20,15 @@ public class TokenService
     }
     public string GenerateJwtToken(User user)
     {
+        // Get the security key value from appsetting.json.
         var secretKey = _configuration["JwtSettings:SecretKey"];
+        // Convert security key to a byte array, then create SymmetricSecurityKey.
+        // This key will be used for both signing and verification of token.  
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        // Generate new SigningCredentials with key and algorithm. 
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        // Create a new claim for user when logged in with their data. 
         var claims = new[]
         {
             // User Id
@@ -34,6 +39,7 @@ public class TokenService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
+        // Generate a token with metadata. claims, expire time, and credentials. 
         var token = new JwtSecurityToken(
             issuer: "NoteTakingApp",
             audience: "NoteTakingApp",
@@ -42,6 +48,7 @@ public class TokenService
             signingCredentials: credentials
         );
 
+        // Return the generated token as a string. 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

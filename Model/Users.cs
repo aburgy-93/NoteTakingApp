@@ -11,7 +11,7 @@ public class User
 
     [Required]
     [MaxLength(50)]
-    public string Username { get; set; }
+    public required string Username { get; set; }
 
     [JsonIgnore]
     public string PasswordHash { get; set; } = string.Empty;
