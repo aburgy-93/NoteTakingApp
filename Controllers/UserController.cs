@@ -15,7 +15,6 @@ namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     // Create new instance of AttributeController to handle requests.
     public class UserController : ControllerBase
     {

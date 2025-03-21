@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Db;
 using Backend.Model;
 using Microsoft.AspNetCore.Authorization;
+using Backend.DTOs;
 
 namespace Backend.Controllers
 {
@@ -68,21 +69,24 @@ namespace Backend.Controllers
         */
         [HttpPut("{id}")]
         public async Task<IActionResult> PutNoteAttribute(int id, 
-            NoteAttribute noteAttribute)
+            AttributeUpdateDto noteAttributeDto)
         {
-            // Check to see if passed in id matches a note attribute with same id
-            if (id != noteAttribute.AttributeId)
+            var attribute = await _context.Attributes.FindAsync(id);
+            // Check to see id matches a note attribute.
+            if (attribute == null)
             {
                 // if none exists, return bad request
                 return BadRequest();
             }
+
+            attribute.AttributeName = noteAttributeDto.AttributeName;
 
             /*
                 This is telling EF Core that an entity (noteAttribute) has been 
                     modified and should be updated in the database when 
                     SaveChanges() is called.
             */
-            _context.Entry(noteAttribute).State = EntityState.Modified;
+            _context.Entry(attribute).State = EntityState.Modified;
 
             try
             {

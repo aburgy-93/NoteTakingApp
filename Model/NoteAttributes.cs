@@ -11,5 +11,4 @@ public class NoteAttribute
     [Required]
     public required string AttributeName {get; set;}
 
-
 }
